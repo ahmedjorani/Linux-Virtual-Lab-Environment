@@ -1,0 +1,180 @@
+# Vagrant Lab Project - .gitignore
+# Optimized for macOS development
+
+# Vagrant-specific files
+.vagrant/
+*.log
+
+# VirtualBox files
+*.vbox
+*.vbox-prev
+*.vdi
+*.vmdk
+*.vhd
+*.hdd
+
+# Vagrant boxes (if downloaded locally)
+*.box
+
+# SSH keys (if generated locally)
+.ssh/
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# macOS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# macOS Finder attribute files
+.com.apple.timemachine.donotpresent
+
+# macOS temporary files
+.TemporaryItems
+.fseventsd
+.VolumeIcon.icns
+
+# Xcode (if using Xcode for any scripting)
+build/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+
+# IDE and Editor files
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# Backup files
+*.bak
+*.backup
+*.tmp
+*.temp
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Package managers
+node_modules/
+npm-debug.log
+yarn.lock
+package-lock.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Ruby
+*.gem
+*.rbc
+/.config
+/coverage/
+/InstalledFiles
+/pkg/
+/spec/reports/
+/spec/examples.txt
+/test/tmp/
+/test/version_tmp/
+/tmp/
+
+# Local configuration files
+config.local
+local.conf
+*.local
+
+# Custom scripts and notes (add your own patterns)
+notes.txt
+todo.txt
+scratch.*
+
+# Compressed files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# VM snapshots and states
+*.vmsn
+*.vmss
+*.nvram
+
+# Parallels (alternative to VirtualBox on Mac)
+*.pvm/
+
+# VMware (alternative virtualization)
+*.vmx
+*.vmxf
+*.vmsd
+
+# Ansible (if used for provisioning)
+*.retry
+.vault_pass.txt
+
+# Terraform (if used)
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Docker (if used alongside)
+Dockerfile.local
+docker-compose.override.yml
+
+# Local testing files
+test-output/
+coverage/
