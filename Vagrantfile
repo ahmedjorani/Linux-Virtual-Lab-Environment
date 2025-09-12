@@ -7,34 +7,54 @@
 
 Vagrant.configure("2") do |config|
 
-  # Ubuntu with GUI (Desktop Environment)
-  config.vm.define "ubuntu-gui" do |ubuntu_gui|
-    ubuntu_gui.vm.box = "ubuntu/jammy64"
-    ubuntu_gui.vm.hostname = "ubuntu-gui-lab"
-    ubuntu_gui.vm.network "private_network", ip: "192.168.56.10"
+  # Debian with Lightweight GUI (XFCE Desktop Environment)
+  config.vm.define "debian-gui" do |debian_gui|
+    debian_gui.vm.box = "debian/bookworm64"
+    debian_gui.vm.hostname = "debian-gui-lab"
+    debian_gui.vm.network "private_network", ip: "192.168.56.10"
 
-    ubuntu_gui.vm.provider "virtualbox" do |vb|
-      vb.name = "Ubuntu-GUI-Lab"
-      vb.memory = "2048"
-      vb.cpus = 2
+    debian_gui.vm.provider "virtualbox" do |vb|
+      vb.name = "Debian-XFCE-Lab"
+      vb.memory = "1024"
+      vb.cpus = 1
       vb.gui = true
 
-      # Enable 3D acceleration and increase video memory
+      # Enable 3D acceleration and video memory
       vb.customize ["modifyvm", :id, "--accelerate3d", "on"]
       vb.customize ["modifyvm", :id, "--vram", "128"]
       vb.customize ["modifyvm", :id, "--clipboard", "bidirectional"]
       vb.customize ["modifyvm", :id, "--draganddrop", "bidirectional"]
     end
 
-    # Install desktop environment and essential tools
-    ubuntu_gui.vm.provision "shell", inline: <<-SHELL
+    # Install XFCE desktop environment with essential tools
+    debian_gui.vm.provision "shell", inline: <<-SHELL
+      # Update system packages
       apt-get update
       apt-get upgrade -y
 
-      # Install Ubuntu Desktop (minimal)
-      apt-get install -y ubuntu-desktop-minimal
+      # Ensure vagrant user exists with proper setup
+      id -u vagrant &>/dev/null || useradd -m -s /bin/bash vagrant
+      echo 'vagrant:vagrant' | chpasswd
+      usermod -aG sudo vagrant
 
-      # Install additional useful tools
+      # Install dependencies for Guest Additions
+      apt-get install -y \
+        build-essential \
+        dkms \
+        linux-headers-$(uname -r) \
+        sudo \
+        apt-transport-https \
+        ca-certificates \
+        gnupg \
+        lsb-release
+
+      # Install XFCE Desktop Environment (lightweight)
+      apt-get install -y \
+        task-xfce-desktop \
+        lightdm \
+        lightdm-gtk-greeter
+
+      # Install essential applications
       apt-get install -y \
         curl \
         wget \
@@ -42,18 +62,57 @@ Vagrant.configure("2") do |config|
         vim \
         htop \
         net-tools \
-        firefox \
-        terminator
+        firefox-esr \
+        xfce4-terminal \
+        mousepad \
+        thunar \
+        ristretto
 
-      # Enable automatic login for vagrant user
-      sed -i 's/#  AutomaticLoginEnable = true/AutomaticLoginEnable = true/' /etc/gdm3/custom.conf
-      sed -i 's/#  AutomaticLogin = user1/AutomaticLogin = vagrant/' /etc/gdm3/custom.conf
+      # Install VirtualBox Guest Additions
+      apt-get install -y virtualbox-guest-additions-iso
+      apt-get install -y virtualbox-guest-utils virtualbox-guest-x11
 
-      # Start display manager
-      systemctl enable gdm3
+      # Configure LightDM for auto-login
+      mkdir -p /etc/lightdm/lightdm.conf.d/
+      cat > /etc/lightdm/lightdm.conf.d/50-vagrant-autologin.conf << 'EOF'
+[Seat:*]
+autologin-user=vagrant
+autologin-user-timeout=0
+user-session=xfce
+EOF
+
+      # Enable display manager
+      systemctl enable lightdm
       systemctl set-default graphical.target
 
-      echo "Ubuntu GUI setup completed!"
+      # Add vagrant user to vboxsf group for shared folders
+      usermod -aG vboxsf vagrant
+
+      # Allow vagrant user to sudo without password
+      echo 'vagrant ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/vagrant
+      chmod 440 /etc/sudoers.d/vagrant
+
+      # Optimize boot time by disabling unnecessary services
+      systemctl disable bluetooth.service || true
+      systemctl disable cups.service || true
+
+      # Enable VirtualBox services
+      systemctl enable vboxservice || true
+
+      echo "=========================================="
+      echo "Debian XFCE setup completed successfully!"
+      echo "Username: vagrant | Password: vagrant"
+      echo ""
+      echo "IMPORTANT: For full screen mode to work:"
+      echo "1. After first login, restart the VM once"
+      echo "2. Use Host+F (usually Right Ctrl + F)"
+      echo "3. Or go to VirtualBox View menu > Full-screen Mode"
+      echo "4. Guest Additions will auto-resize the display"
+      echo "5. Resolution fix (xrandr -s 1) runs automatically"
+      echo ""
+      echo "Manual resolution fix: xrandr -s 1"
+      echo "Restart command: vagrant reload debian-gui"
+      echo "=========================================="
     SHELL
   end
 
@@ -70,12 +129,13 @@ Vagrant.configure("2") do |config|
       vb.gui = false
     end
 
-    # Install essential CLI tools
+    # Install essential CLI tools and development environment
     ubuntu_cli.vm.provision "shell", inline: <<-SHELL
+      # Update system packages
       apt-get update
       apt-get upgrade -y
 
-      # Install useful CLI tools
+      # Install essential CLI tools
       apt-get install -y \
         curl \
         wget \
@@ -91,7 +151,10 @@ Vagrant.configure("2") do |config|
         nodejs \
         npm
 
-      echo "Ubuntu CLI setup completed!"
+      echo "=========================================="
+      echo "Ubuntu CLI setup completed successfully!"
+      echo "Access via: vagrant ssh ubuntu-cli"
+      echo "=========================================="
     SHELL
   end
 
@@ -108,14 +171,15 @@ Vagrant.configure("2") do |config|
       vb.gui = false
     end
 
-    # Install essential CLI tools
+    # Install essential CLI tools and enterprise environment
     rocky_cli.vm.provision "shell", inline: <<-SHELL
+      # Update system packages
       dnf update -y
 
       # Install EPEL repository
       dnf install -y epel-release
 
-      # Install useful CLI tools
+      # Install essential CLI tools
       dnf install -y \
         curl \
         wget \
@@ -133,15 +197,18 @@ Vagrant.configure("2") do |config|
         nodejs \
         npm
 
-      # Enable and start firewall
+      # Configure and enable firewall
       systemctl enable firewalld
       systemctl start firewalld
 
-      echo "RockyLinux CLI setup completed!"
+      echo "=========================================="
+      echo "RockyLinux CLI setup completed successfully!"
+      echo "Access via: vagrant ssh rocky-cli"
+      echo "=========================================="
     SHELL
   end
 
-  # Global configurations
+  # Global VM configurations
   config.vm.box_check_update = false
 
   # SSH configuration
@@ -150,4 +217,24 @@ Vagrant.configure("2") do |config|
 
   # Sync folder configuration
   config.vm.synced_folder ".", "/vagrant", disabled: false
+
+  # Global message
+  config.vm.post_up_message = <<-MSG
+  ==========================================
+  Virtual Lab Environment Ready!
+
+  VMs Created:
+  - debian-gui  (192.168.56.10) - Debian 12 XFCE Desktop
+  - ubuntu-cli  (192.168.56.11) - Ubuntu 22.04 CLI
+  - rocky-cli   (192.168.56.12) - RockyLinux 9 CLI
+
+  Access Methods:
+  - GUI: VirtualBox window (auto-opens for debian-gui)
+  - CLI: vagrant ssh <vm-name>
+
+  Credentials: vagrant/vagrant
+
+  Remember: This is for practice only!
+  ==========================================
+  MSG
 end
