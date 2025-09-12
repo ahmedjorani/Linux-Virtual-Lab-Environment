@@ -263,7 +263,9 @@ git config --global user.email "your.email@example.com"
 
 1. **Clone or download this repository**
    ```bash
+   # Create a lab directory with a name of your choice
    mkdir vagrant-lab
+   # Change into that directory
    cd vagrant-lab
    # To clone the content of a Git repository directly into your current directory, rather than creating a new subdirectory with the repository name
    git clone <repository-url> .
