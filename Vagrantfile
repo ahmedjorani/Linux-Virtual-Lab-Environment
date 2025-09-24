@@ -22,6 +22,14 @@ Vagrant.configure("2") do |config|
     debian_gui.vm.provision "shell", inline: <<-SHELL
       apt-get update
       apt-get upgrade -y
+      
+      # Ensure vagrant user exists and set password
+      id -u vagrant &>/dev/null || useradd -m -s /bin/bash vagrant
+      echo 'vagrant:vagrant' | chpasswd
+      usermod -aG sudo vagrant
+      echo 'vagrant ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/vagrant
+      chmod 440 /etc/sudoers.d/vagrant
+      
       apt-get install -y task-xfce-desktop lightdm lightdm-gtk-greeter
       mkdir -p /etc/lightdm/lightdm.conf.d/
       cat > /etc/lightdm/lightdm.conf.d/50-vagrant-autologin.conf << 'EOF'
