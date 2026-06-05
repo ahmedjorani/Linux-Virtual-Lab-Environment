@@ -5,11 +5,11 @@ Vagrant.configure("2") do |config|
 
   config.vm.define "debian-gui" do |debian_gui|
     debian_gui.vm.box = "debian/bookworm64"
-    debian_gui.vm.hostname = "debian-gui-lab"
+    debian_gui.vm.hostname = "debian-gui"
     debian_gui.vm.network "private_network", ip: "192.168.56.10"
 
     debian_gui.vm.provider "virtualbox" do |vb|
-      vb.name = "Debian-GUI-Lab"
+      vb.name = "Debian-gui"
       vb.memory = "1024"
       vb.cpus = 1
       vb.gui = true
@@ -19,17 +19,22 @@ Vagrant.configure("2") do |config|
       vb.customize ["modifyvm", :id, "--draganddrop", "bidirectional"]
     end
 
+    # Copy vagrant private key from host to VM
+     debian_gui.vm.provision "file",
+     source: "~/.vagrant.d/insecure_private_keys/vagrant.key.rsa",
+     destination: "~/.ssh/vagrant.key.rsa"
+
     debian_gui.vm.provision "shell", inline: <<-SHELL
       apt-get update
       apt-get upgrade -y
-      
+
       # Ensure vagrant user exists and set password
       id -u vagrant &>/dev/null || useradd -m -s /bin/bash vagrant
       echo 'vagrant:vagrant' | chpasswd
       usermod -aG sudo vagrant
       echo 'vagrant ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/vagrant
       chmod 440 /etc/sudoers.d/vagrant
-      
+
       apt-get install -y task-xfce-desktop lightdm lightdm-gtk-greeter
       mkdir -p /etc/lightdm/lightdm.conf.d/
       cat > /etc/lightdm/lightdm.conf.d/50-vagrant-autologin.conf << 'EOF'
@@ -40,20 +45,42 @@ user-session=xfce
 EOF
       systemctl enable lightdm
       systemctl set-default graphical.target
+
+      # Fix permissions on copied key
+       chmod 600 /home/vagrant/.ssh/vagrant.key.rsa
+       chown vagrant:vagrant /home/vagrant/.ssh/vagrant.key.rsa
     SHELL
   end
 
   config.vm.define "ubuntu-cli" do |ubuntu_cli|
     ubuntu_cli.vm.box = "ubuntu/jammy64"
-    ubuntu_cli.vm.hostname = "ubuntu-cli-lab"
+    ubuntu_cli.vm.hostname = "ubuntu-cli"
     ubuntu_cli.vm.network "private_network", ip: "192.168.56.11"
 
     ubuntu_cli.vm.provider "virtualbox" do |vb|
-      vb.name = "Ubuntu-CLI-Lab"
+      vb.name = "Ubuntu-cli"
       vb.memory = "1024"
       vb.cpus = 1
       vb.gui = false
     end
+
+    # Extra disks for partition-practice labs.
+    # Vagrant handles disk creation, placement, and idempotency automatically.
+    # On `vagrant reload` these disks are re-attached; removing an entry
+    # detaches (and deletes) it after `vagrant reload`.
+     ubuntu_cli.vm.disk :disk, size: "5GB", name: "ubuntu_cli_disk1"
+     ubuntu_cli.vm.disk :disk, size: "5GB", name: "ubuntu_cli_disk2"
+
+    # Copy vagrant private key from host to VM
+     ubuntu_cli.vm.provision "file",
+     source: "~/.vagrant.d/insecure_private_keys/vagrant.key.rsa",
+     destination: "~/.ssh/vagrant.key.rsa"
+
+    # Fix permissions on copied key
+     ubuntu_cli.vm.provision "shell", inline: <<-SHELL
+      chmod 600 /home/vagrant/.ssh/vagrant.key.rsa
+      chown vagrant:vagrant /home/vagrant/.ssh/vagrant.key.rsa
+     SHELL
   end
 
   config.vm.box_check_update = false
