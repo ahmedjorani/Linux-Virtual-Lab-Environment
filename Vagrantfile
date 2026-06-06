@@ -13,18 +13,21 @@ Vagrant.configure("2") do |config|
       vb.memory = "1024"
       vb.cpus = 1
       vb.gui = true
-      vb.customize ["modifyvm", :id, "--accelerate3d", "on"]
+      vb.customize ["modifyvm", :id, "--graphicscontroller", "vmsvga"]
+      vb.customize ["modifyvm", :id, "--accelerate3d", "off"]
       vb.customize ["modifyvm", :id, "--vram", "128"]
       vb.customize ["modifyvm", :id, "--clipboard", "bidirectional"]
       vb.customize ["modifyvm", :id, "--draganddrop", "bidirectional"]
     end
 
     # Copy vagrant private key from host to VM
-     debian_gui.vm.provision "file",
-     source: "~/.vagrant.d/insecure_private_keys/vagrant.key.rsa",
-     destination: "~/.ssh/vagrant.key.rsa"
+    debian_gui.vm.provision "file",
+      source: "~/.vagrant.d/insecure_private_keys/vagrant.key.rsa",
+      destination: "~/.ssh/vagrant.key.rsa"
 
-    debian_gui.vm.provision "shell", inline: <<-SHELL
+    debian_gui.vm.provision "shell", name: "setup", inline: <<-SHELL
+      set -e
+
       apt-get update
       apt-get upgrade -y
 
@@ -35,7 +38,15 @@ Vagrant.configure("2") do |config|
       echo 'vagrant ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/vagrant
       chmod 440 /etc/sudoers.d/vagrant
 
-      apt-get install -y task-xfce-desktop lightdm lightdm-gtk-greeter
+      # Install XFCE desktop and display manager
+      DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        task-xfce-desktop \
+        lightdm \
+        lightdm-gtk-greeter \
+        xserver-xorg-video-vmware \
+        spice-vdagent
+
+      # Configure LightDM auto-login
       mkdir -p /etc/lightdm/lightdm.conf.d/
       cat > /etc/lightdm/lightdm.conf.d/50-vagrant-autologin.conf << 'EOF'
 [Seat:*]
@@ -43,12 +54,17 @@ autologin-user=vagrant
 autologin-user-timeout=0
 user-session=xfce
 EOF
+
+      # Set graphical boot target and enable LightDM
       systemctl enable lightdm
       systemctl set-default graphical.target
 
       # Fix permissions on copied key
-       chmod 600 /home/vagrant/.ssh/vagrant.key.rsa
-       chown vagrant:vagrant /home/vagrant/.ssh/vagrant.key.rsa
+      chmod 600 /home/vagrant/.ssh/vagrant.key.rsa
+      chown vagrant:vagrant /home/vagrant/.ssh/vagrant.key.rsa
+
+      # Schedule reboot after 5 seconds so Vagrant SSH session can exit cleanly
+      nohup bash -c "sleep 5 && reboot" &>/dev/null &
     SHELL
   end
 
@@ -68,19 +84,19 @@ EOF
     # Vagrant handles disk creation, placement, and idempotency automatically.
     # On `vagrant reload` these disks are re-attached; removing an entry
     # detaches (and deletes) it after `vagrant reload`.
-     ubuntu_cli.vm.disk :disk, size: "5GB", name: "ubuntu_cli_disk1"
-     ubuntu_cli.vm.disk :disk, size: "5GB", name: "ubuntu_cli_disk2"
+    ubuntu_cli.vm.disk :disk, size: "5GB", name: "ubuntu_cli_disk1"
+    ubuntu_cli.vm.disk :disk, size: "5GB", name: "ubuntu_cli_disk2"
 
     # Copy vagrant private key from host to VM
-     ubuntu_cli.vm.provision "file",
-     source: "~/.vagrant.d/insecure_private_keys/vagrant.key.rsa",
-     destination: "~/.ssh/vagrant.key.rsa"
+    ubuntu_cli.vm.provision "file",
+      source: "~/.vagrant.d/insecure_private_keys/vagrant.key.rsa",
+      destination: "~/.ssh/vagrant.key.rsa"
 
     # Fix permissions on copied key
-     ubuntu_cli.vm.provision "shell", inline: <<-SHELL
+    ubuntu_cli.vm.provision "shell", inline: <<-SHELL
       chmod 600 /home/vagrant/.ssh/vagrant.key.rsa
       chown vagrant:vagrant /home/vagrant/.ssh/vagrant.key.rsa
-     SHELL
+    SHELL
   end
 
   config.vm.box_check_update = false

@@ -42,10 +42,13 @@ lsblk
 
 Expected output:
 ```
-NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+loop0    7:0    0 63.8M  1 loop /snap/core20/2599
+loop1    7:1    0 89.4M  1 loop /snap/lxd/31333
+loop2    7:2    0 49.3M  1 loop /snap/snapd/24792
 sda      8:0    0   40G  0 disk
 └─sda1   8:1    0   40G  0 part /
-sdb      8:16   0    5G  0 disk
+sdb      8:16   0   10M  0 disk
 sdc      8:32   0    5G  0 disk          ← ubuntu_cli_disk1
 sdd      8:48   0    5G  0 disk          ← ubuntu_cli_disk2
 ```
