@@ -40,6 +40,7 @@ Vagrant.configure("2") do |config|
 
       # Install XFCE desktop and display manager
       DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        curl \
         task-xfce-desktop \
         lightdm \
         lightdm-gtk-greeter \
@@ -92,10 +93,13 @@ EOF
       source: "~/.vagrant.d/insecure_private_keys/vagrant.key.rsa",
       destination: "~/.ssh/vagrant.key.rsa"
 
-    # Fix permissions on copied key
+    # Fix permissions on copied key, ensure curl is installed
     ubuntu_cli.vm.provision "shell", inline: <<-SHELL
       chmod 600 /home/vagrant/.ssh/vagrant.key.rsa
       chown vagrant:vagrant /home/vagrant/.ssh/vagrant.key.rsa
+
+      apt-get update
+      apt-get install -y curl
     SHELL
   end
 
